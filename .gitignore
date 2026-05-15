@@ -1,0 +1,3 @@
+results/*
+src/motif_id_lib/__pycache__
+*.pyc

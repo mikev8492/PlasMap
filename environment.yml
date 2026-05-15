@@ -1,0 +1,14 @@
+name: plasmap_demo
+channels:
+  - conda-forge
+dependencies:
+- python=3.11
+- streamlit
+- pandas
+- biopython
+- matplotlib
+- numpy
+- inquirer
+- blessed
+- readchar
+- termcolor
