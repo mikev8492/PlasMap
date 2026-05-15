@@ -31,9 +31,9 @@
             ├── input.py
             ├── motif_locator.py
             ├── output.py
-        ├── main.py     <---- CLI entry point
+        ├── main.py         <---- CLI entry point
     └── 📁web
-        ├── app.py      <---- Web UI entry point
+        ├── app.py          <---- Web UI entry point
         ├── UI-README.md
     ├── .gitignore
     ├── dependencies.txt
@@ -42,7 +42,7 @@
     ├── pseudocode.md
     └── README.md
 ``` 
-The `src` file contains the following:
+
 1. `inputs`: Folder to upload plasmid sequences for analysis.
     - Contains `test` folder with example plasmid files.
 2. `database` : Contains a CSV file of restriction enzymes and recognition sequence motifs. 
