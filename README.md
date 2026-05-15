@@ -1,320 +1,218 @@
-# PlasMap — Streamlit Web Interface
+# PlasMap - Plasmid annotation tool
 
-> A browser-based UI for the plasmid annotation tool [PlasMap](https://github.com/mikev8492/PlasMap).
+>Click here for live demo: [PlasMap]()
+
+## Overview:
+**PlasMap** is a python tool that takes a plasmid sequence file as input and generates annotated sequence maps with Restriction Enzyme cut sites.
+
+### Features:
+- **CSV Results File** - Results table containing enzyme list with motif, cut type, and binding location. 
+- **Circular map**  -  Circular plasmid map displaying enzyme cut locations to visualize plasmid topology and identify candidate enzymes for cloning experiments.  
+- **Double-stranded linear map** - Sequence-level map of the entire plasmid containing highlighted recognition motifs and cut marks on forward and complimentary strands. This allows visualization of enzyme overlap and overhang.  
+- **Single-stranded linear map** - Optional map containing the same sequence-level map, but with only the forward strand visualized. 
+- **Terminal User Interface** - Optional mode that displays enzyme list in the terminal for the user to select from. 
+- IUPAC ambiguity code support in recognition sequences
+- GenBank and FASTA format compatible
 
 
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Launching the App](#launching-the-app)
-- [UI Walkthrough](#ui-walkthrough)
-  - [Sidebar](#sidebar)
-    - [1 · Sequence Input](#1--sequence-input)
-    - [2 · Enzyme Selection](#2--enzyme-selection)
-    - [3 · Map Options](#3--map-options)
-    - [Generate Maps Button](#generate-maps-button)
-  - [Main Panel](#main-panel)
-    - [Summary Metrics](#summary-metrics)
-    - [Circular Map Tab](#-circular-map-tab)
-    - [Linear Map Tab](#-linear-map-tab)
-    - [Results Table Tab](#-results-table-tab)
-- [CLI vs. Streamlit — Feature Comparison](#cli-vs-streamlit--feature-comparison)
-- [File Structure](#file-structure)
-- [Notes for Developers](#notes-for-developers)
-
----
-
-## Overview
-
-`app.py` wraps the PlasMap analysis pipeline with a [Streamlit](https://streamlit.io) web interface. It replaces the `argparse` CLI and the optional terminal UI (`-i` flag) with interactive widgets that run in any browser.
-
-All core logic in `src/motif_id_lib/` is **unchanged**. The Streamlit layer only handles input collection, calling `run_analysis()`, and rendering results — it does not write any files to disk during normal use.
-
----
-
-## Requirements
-
-All existing PlasMap dependencies are still required, with these additional depenencies:
-
-```yaml
-# environment.yml 
-- streamlit>=1.35
-- pandas
+## Project File Structure:
 ```
+└── 📁PlasMap
+    └── 📁inputs
+        └── 📁test
+            ├── pUC19.fasta
+            ├── ...
+    └── 📁src
+        └── 📁database
+            ├── enzymes.csv
+        └── 📁motif_id_lib
+            ├── __init__.py
+            ├── csv_output.py
+            ├── input.py
+            ├── motif_locator.py
+            ├── output.py
+        ├── main.py     <---- CLI entry point
+    └── 📁web
+        ├── app.py      <---- Web UI entry point
+        ├── UI-README.md
+    ├── .gitignore
+    ├── dependencies.txt
+    ├── environment.yml
+    ├── LICENSE
+    ├── pseudocode.md
+    └── README.md
+``` 
+The `src` file contains the following:
+1. `inputs`: Folder to upload plasmid sequences for analysis.
+    - Contains `test` folder with example plasmid files.
+2. `database` : Contains a CSV file of restriction enzymes and recognition sequence motifs. 
+3. `src`: Contains the logic for the program.
+    - Loads the user input sequence and restriction enzymes database. 
+    - Parses the plasmid sequence with each enzyme motif to identify cut locations.
+    - Produces output containing an annotated map of the sequence with the enzyme cut sites in the `results` folder.
+4. `web`: Contains web UI to demo the program:
+    - Uses Streamlit package to run and host 
+    - Graphical UI uses same modules as main program
+    - Converts user CLI arguments to widgets for input
+    - Generates the same output files for download. 
+
 ---
 
 ## Installation
 
-```bash
-# 1. Clone the repository 
-git clone https://github.com/mikev8492/PlasMap_demo.git
-cd PlasMap_demo
+>Ensure conda environment manager is installed first. 
 
-# 2. Create and activate the conda environment
+Create project environment:
+```bash
 conda env create -f environment.yml
-conda activate plasmap_demo
-
 ```
+Conda will automatically create an environment named `plasmap` with all the specified packages and versions.
 
 ---
 
-## Launching the App
+## Usage:
 
-Run this from the **root** (the same directory that contains `app.py`):
-
+### 1. Activate the environment:
 ```bash
-streamlit run app.py
+conda activate plasmap
+```
+### 2. Run command:
+
+#### Example 1: Default
+- Double stranded map
+- Default pUC19 plasmid - FASTA format
+- Default enzyme list (all 20). 
+```bash
+python src/main.py
 ```
 
-Streamlit will print a local URL (typically `http://localhost:8501`) and open the app in your default browser automatically.
-
----
-
-## UI Walkthrough
-
-The interface is split into two areas: a **sidebar** on the left for inputs and settings, and a **main panel** on the right for results.
-
----
-
-### Sidebar
-
-The sidebar walks through three numbered sections. The **▶ Generate maps** button at the bottom activates once all required inputs are set.
-
----
-
-#### 1 · Sequence Input
-
-Controls how the plasmid sequence is loaded.
-
-**Input mode** (radio buttons)
-
-| Option | Behaviour |
-|---|---|
-| **Upload file** | Shows a file-upload widget. Drag-and-drop or click to browse. |
-| **Use demo plasmid** | Shows a dropdown of five plasmids bundled with the repository. |
-
-**Accepted file formats** (upload mode)
-
-| Format | Extensions |
-|---|---|
-| FASTA | `.fasta` `.fa` `.fas` `.fna` `.ffn` `.faa` `.mpfa` `.frn` |
-| GenBank | `.gb` `.gbk` |
-
-**Bundled demo plasmids** (demo mode)
-
-| Label | Description |
-|---|---|
-| pUC19 (FASTA) | Standard cloning vector, 2,686 bp, FASTA format |
-| pUC19 (GenBank) | Same vector in annotated GenBank format |
-| pCMV-GLuc (GenBank) | Mammalian expression vector |
-| M13mp18 (GenBank) | Single-stranded bacteriophage vector |
-| pBeloBAC11 (GenBank) | Bacterial artificial chromosome |
-
----
-
-#### 2 · Enzyme Selection
-
-Controls which restriction enzymes are searched against the plasmid sequence.
-
-**Restriction enzymes** (multiselect)
-
-A searchable dropdown containing every enzyme in `src/database/enzymes.csv`. Type to filter by name. Selected enzymes appear as removable tags above the dropdown.
-
-The app loads pre-selected with a default panel of **22 common Type II restriction enzymes**:
-
-```
-EcoRI   HindIII  BamHI   XhoI    NotI    SalI    PstI    KpnI
-XbaI    EcoRV    SmaI    NdeI    SacI    SpeI    BglII   ApaI
-SphI    MluI     ClaI    HaeIII  Eco91I  Eco24I
+#### Example 2: User plasmid
+- Double stranded map
+- Default enzyme list (all 20)
+- User plasmid pCMV-GLuc (mammalian vector) - GenBank format
+```bash
+python src/main.py -s inputs/test/pCMV-GLuc.gb
 ```
 
-**Quick-select buttons**
-
-| Button | Action |
-|---|---|
-| **Default 22** | Resets the selection to the 22-enzyme default panel above. |
-| **Clear all** | Removes all selected enzymes. |
-
-> **Note:** Enzyme names are case-sensitive and must match the names in `src/database/enzymes.csv` exactly (e.g. `EcoRI`, not `ecori` or `ECORI`).
-
----
-
-#### 3 · Map Options
-
-**Single-stranded linear map** (checkbox)
-
-| State | Linear map output |
-|---|---|
-| ☐ Unchecked (default) | **Double-stranded** — both the forward (5'→3') and reverse complementary (3'→5') strands, connected by base-pairing tick marks, with cut annotations on each strand. |
-| ☑ Checked | **Single-stranded** — forward strand only, with top-strand cut site annotations. |
-
-This option does not affect the circular map, which is always generated.
-
----
-
-#### Generate Maps Button
-
+#### Example 3: User enzyme list
+- Double stranded map
+- User provided list of enzymes
+- Default pUC19 plasmid
+```bash
+python src/main.py -e EcoRI HindIII BamHI
 ```
-▶  Generate maps
+>NOTE: Refer to `database/enzymes.csv` for full list of Type II restriction enzymes.
+
+#### Example 4: Single stranded
+- Single stranded map
+- Single stranded M13mp18 bacteriophage vector
+- Default enzyme list (all 20)
+- 
+```bash
+python src/main.py -s inputs/test/M13mp18.gb -ss
 ```
 
-- Appears **disabled** (greyed out) until both a sequence source and at least one enzyme are selected.
-- Displays a spinner (`Analysing sequence and rendering maps…`) while the pipeline runs.
-- On success, the results panel updates immediately.
-- On failure (unreadable file, no enzyme matches, etc.), an error message is shown in the main panel.
+#### BONUS Example: TUI
+- Terminal User interface for enzyme selection
 
----
-
-### Main Panel
-
-Before running any analysis, the main panel shows a brief feature summary. After clicking **▶ Generate maps**, results appear in four areas.
-
----
-
-#### Summary Metrics
-
-Four metric cards displayed in a row immediately after a successful run:
-
-| Card | Content |
-|---|---|
-| **Plasmid** | Sequence identifier or definition line from the file header. |
-| **Length (bp)** | Total nucleotide length of the loaded sequence, comma-formatted. |
-| **Cutting enzymes** | Number of selected enzymes with at least one recognition site found. |
-| **Non-cutters** | Number of selected enzymes with zero matches in this sequence. |
-
----
-
-#### 🔵 Circular Map Tab
-
-A radial plasmid map rendered at 150 DPI, displayed full-width.
-
-**Map elements:**
-
-- **Backbone circle** — represents the full plasmid sequence.
-- **Position ruler** — tick marks and bp labels at 500 bp intervals around the backbone.
-- **Cut-site ticks** — each tick is coloured by enzyme and points radially outward from the backbone at the cut position.
-- **Leader lines** — dashed lines connecting each tick to its label.
-- **Labels** — enzyme name and sequence position `(bp)`, stacked radially outward to avoid overlap when multiple cut sites fall close together.
-- **Legend** (lower-left) — colour swatch and enzyme name for every cutting enzyme.
-- **Centre text** — plasmid name, total length in bp, and unique cutter count.
-- **Non-cutter note** (bottom) — comma-separated list of enzymes with zero cuts, if any.
-
-**Download button:** `⬇ Download circular map (PNG)` — saves `circular_map.png` at 150 DPI.
-
----
-
-#### 📏 Linear Map Tab
-
-A base-level sequence viewer rendered at 150 DPI, displayed full-width. The tab subtitle shows whether the map is single-stranded or double-stranded based on the sidebar checkbox.
-
-**Map elements (both modes):**
-
-- Sequence is wrapped into lines of 80 bases per row.
-- Each nucleotide is coloured by base identity:
-
-  | Base | Colour |
-  |---|---|
-  | A | Green |
-  | T | Red |
-  | G | Yellow |
-  | C | Blue |
-
-- Recognition motif spans are highlighted with the enzyme's assigned palette colour.
-- Top-strand cut sites are annotated with a vertical tick and a labelled arrow pointing upward.
-- Position numbers are shown at the left margin of each row.
-
-**Additional elements in double-stranded mode:**
-
-- The reverse complement strand is rendered directly below the forward strand.
-- Short vertical tick marks between paired bases indicate Watson–Crick hydrogen bonding.
-- Bottom-strand cut site annotations point downward below the complement strand.
-- 5'/3' polarity labels appear at each end of both strands.
-
-**Download button:** `⬇ Download linear map (PNG)` — saves `double_stranded_linear_map.png` or `single_stranded_linear_map.png` at 150 DPI.
-
----
-
-#### 📋 Results Table Tab
-
-An interactive sortable table with one row per enzyme, sorted by cut count descending.
-
-**Columns:**
-
-| Column | Description |
-|---|---|
-| `enzyme` | Restriction enzyme name. |
-| `motif` | Recognition sequence (IUPAC notation). |
-| `cut_site` | Cut notation using `^` (top strand) and `_` (bottom strand). |
-| `observed_count` | Number of times the recognition motif was found in the sequence. |
-| `start_positions` | Comma-separated list of 0-based start positions of each match. Shown as `—` for non-cutters. |
-
-Rows for enzymes with at least one cut site are highlighted in green. Rows for non-cutters have a plain white background.
-
-Click any column header to sort. The table is scrollable with a fixed height of 450 px.
-
-**Download button:** `⬇ Download results (CSV)` — saves `plasmid_results.csv`.
-
-**CSV columns:** `enzyme, motif, cut_site, observed_count, start_positions`
-
----
-
-## CLI vs. Streamlit — Feature Comparison
-
-| Feature | CLI (`main.py`) | Streamlit (`app.py`) |
-|---|---|---|
-| Sequence input | File path via `-s` flag | File upload widget or demo dropdown |
-| Enzyme selection | `-e` flag or default list | Multiselect widget with full DB access |
-| Interactive enzyme picker | `-i` TUI (terminal checkboxes) | Multiselect + quick-select buttons |
-| Single-stranded map | `-ss` flag | Checkbox in sidebar |
-| Circular map | Always generated, saved to `results/` | Always generated, view in browser + download |
-| Linear map | Saved to `results/` | View in browser + download |
-| CSV output | Saved to path via `-c` flag | Download button in Results table tab |
-| Output destination | `results/` directory on disk | In-browser display + on-demand download |
-
----
-
-## File Structure
-
+- Double stranded map
+- Default pUC19 plasmid
+```bash
+python src/main.py -i
 ```
-└── 📁PlasMap_demo
-    ├── app.py                  ← Streamlit UI 
-    └── 📁src
-        └── 📁motif_id_lib      ← Unchanged core library
-            ├── input.py
-            ├── motif_locator.py
-            ├── output.py
-            └── csv_output.py
-        └── 📁database
-            └── enzymes.csv
-        └── main.py             ← Original CLI entry point
-    └── 📁inputs
-        └── 📁test              ← Demo plasmid files used by the demo dropdown
-            ├── pUC19.fasta
-            ├── pUC19.gb
-            ├── pCMV-GLuc.gb
-            ├── M13mp18.gb
-            └── pBeloBAC11.gb
-    ├── environment.yml
-    └── README.md               
-```
-
+>Use keyboard arrows, and spacebar to select enzymes. Press enter to submit.
 ---
 
-## Notes for Developers
+### Command-Line Arguments:
+| Argument                | Description                                  | Default         |
+| ----------------------- | -------------------------------------------- | --------------- |
+| `-s`. `--sequence_filepath`| Plasmid sequence filepath. Accepts FASTA and GenBank formats. | inputs/test/pUC19.fasta         |
+| `-c`. `--csv_output`| Filepath to export CSV results. | results/plasmid_results.csv |
+| `-ss`, `--single_stranded`        | Output linear map as single-stranded.  | False|
+| `-e`, `--enzymes`       | User list of restriction enzyme names     | (list of top 20)|
+| `-i`, `--interface`           | Optional User interface that displays enzyme list for selection. Use arrows and space bar to make selection.               | False|
 
-**Session state** — Analysis results (`results`, `plasmid`, `fig_circular`, `fig_linear`) are stored in `st.session_state` after a successful run. This ensures the maps and table remain visible when a user clicks a download button, which triggers a Streamlit rerun.
+## Output:
+All saved to `results` folder:
+1. CSV file containing enzyme cut results: 
+    - enzyme
+    - motif
+    - cut_site
+    - observed_count
+    - start_positions
+2. Circular annotated plasmid map `.png`
+3. Linear annotated plasmid map (Double stranded or Single stranded) `.png`
 
-**No disk writes during analysis** — `PlasmidMap.annotate_circular()` and the linear map methods accept `output_path=None`, which skips the `fig.savefig()` call and returns the figure directly. PNGs are only materialised in memory when a download button is clicked.
+---
+## License: 
+**GNU General Public License Version 3**
 
-**Temporary file handling** — Streamlit's `UploadedFile` object is an in-memory buffer. Because `Sequence()` in `input.py` opens files by path, uploaded files are written to a `NamedTemporaryFile` with the correct extension (so format detection in `load_sequence()` works) and the path is passed downstream.
-
-**TUI replacement** — The `-i` terminal interface (built with `inquirer`) is not used by the Streamlit app. `Enzymes.interface()` is called with `interface=False`, which bypasses the `inquirer.prompt()` call entirely and assigns the multiselect choices directly to `self.usr_list`.
+The GNU GPL is a license that ensures code is open-source. GNU GPL allows others to utilize, modify, or distribute code. If other users modify the code, then these users are expected to share their changes to the code under a GNU GPL to maintain the open-source integrity of the code.
 
 --- 
+## References:
+
+### Python Standard Library
+**`re` - Regular Expressions**
+Python Software Foundation. (2024). *re - Regular expression operations*. Python 3 Documentation.
+https://docs.python.org/3/library/re.html
+Used to expand IUPAC ambiguity codes into regex character classes and locate recognition motif positions within the plasmid sequence via `re.finditer()`.
+ 
+**`math`**
+Python Software Foundation. (2024). *math - Mathematical functions*. Python 3 Documentation.
+https://docs.python.org/3/library/math.html
+Used for `math.ceil()` (line-count calculations), `math.floor()` and `math.log10()` (ruler tick interval rounding), and `math.pi` (circular angle arithmetic).
+ 
+**`random`**
+Python Software Foundation. (2024). *random - Generate pseudo-random numbers*. Python 3 Documentation.
+https://docs.python.org/3/library/random.html
+Used to shuffle the enzyme colour palette with a fixed seed for reproducible random colour assignment.
+
+### Third-Party Libraries
+**NumPy**
+
+NumPy Developers. (n.d.). NumPy reference: Routines. https://numpy.org/doc/stable/reference/routines.html
+
+NumPy Developers. (n.d.). numpy.lib.stride_tricks.sliding_window_view. https://numpy.org/doc/stable/reference/generated/numpy.lib.stride_tricks.sliding_window_view.html
+
+**Matplotlib**
+
+Hunter, J. D. (2007). Matplotlib: A 2D graphics environment. *Computing in Science & Engineering*, 9(3), 90–95.
+https://doi.org/10.1109/MCSE.2007.55
+https://matplotlib.org/
+
+
+### Bioinformatics Concepts & Standards
+
+**IUPAC Nucleotide Ambiguity Codes**
+Nomenclature Committee of the International Union of Biochemistry (NC-IUB). (1985). Nomenclature for incompletely specified bases in nucleic acid sequences. *European Journal of Biochemistry*, 150(1), 1–5.
+https://doi.org/10.1111/j.1432-1033.1985.tb08977.x
+The `IUPAC` dictionary maps ambiguity codes (R, Y, S, W, K, M, B, D, H, V, N) to their corresponding regex character classes for motif matching.
+ 
+**Restriction Enzyme Cut Notation**
+Rebase - The Restriction Enzyme Database. Roberts, R. J., Vincze, T., Posfai, J., & Macelis, D. (2023). REBASE: a database for DNA restriction and modification: enzymes, genes and genomes. *Nucleic Acids Research*, 51(D1), D629–D630.
+https://doi.org/10.1093/nar/gkac975
+https://rebase.neb.com/
+The `^` (top-strand cut) and `_` (bottom-strand cut) notation parsed by `_top_cut_offset()` and `_bot_cut_offset()` follows the REBASE convention for describing staggered and blunt restriction enzyme cleavage sites.
+ 
+**DNA Complementarity**
+Watson, J. D., & Crick, F. H. C. (1953). Molecular structure of nucleic acids: A structure for deoxyribose nucleic acid. *Nature*, 171, 737–738.
+https://doi.org/10.1038/171737a0
+The `COMPLEMENT` dictionary (A↔T, G↔C) used to generate the bottom strand in `DoubleStrandedMap` is based on Watson–Crick base-pairing rules.
+
+### Visualization Design
+
+**Circular Plasmid Map Style**
+SnapGene Viewer. GSL Biotech LLC. (2024). *SnapGene - Plasmid map visualisation*.
+https://www.snapgene.com/
+NEB Cutter. Vincze, T., Posfai, J., & Roberts, R. J. (2003). NEBcutter: A program to cleave DNA with restriction enzymes. *Nucleic Acids Research*, 31(13), 3688–3691.
+https://doi.org/10.1093/nar/gkg526
+The radial stacking algorithm in `_compute_label_radii()` - pushing overlapping labels outward in discrete radial steps - was designed to reproduce the label layout style used by these tools.
+ 
+**Colour Palette Design**
+Crameri, F., Shephard, G. E., & Heron, P. J. (2020). The misuse of colour in science communication. *Nature Communications*, 11, 5444.
+https://doi.org/10.1038/s41467-020-19160-7
+Informed the decision to use perceptually distinct, high-contrast colours for enzyme annotation rather than sequential or single-hue palettes.
 
 ### AI assistance:
 

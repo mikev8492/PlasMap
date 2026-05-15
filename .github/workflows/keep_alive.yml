@@ -1,0 +1,47 @@
+# .github/workflows/keep_alive.yml
+#
+# Free 24/7 Streamlit keep-alive using GitHub Actions.
+#
+# Setup:
+#   1. Fork or push this file to your GitHub repo at:
+#        .github/workflows/keep_alive.yml
+#   2. Add your app URL as a repository secret:
+#        Settings → Secrets and variables → Actions → New repository secret
+#        Name:  STREAMLIT_URL
+#        Value: https://your-app.streamlit.app
+#   3. Commit & push — the workflow starts automatically.
+#
+
+
+name: Streamlit Keep-Alive
+
+on:
+  schedule:
+    # Runs every hour  (cron: min hour dom month dow)
+    - cron: "0 */1 * * *"
+  workflow_dispatch:   # allow manual trigger from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping Streamlit app
+        env:
+          STREAMLIT_URL: ${{ secrets.STREAMLIT_URL }}
+        run: |
+          echo "Pinging $STREAMLIT_URL at $(date -u)"
+          STATUS=$(curl --silent --output /dev/null \
+                        --write-out "%{http_code}" \
+                        --location \
+                        --max-time 60 \
+                        --retry 3 \
+                        --retry-delay 10 \
+                        "$STREAMLIT_URL")
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" -ge 200 ]; then
+            echo "::warning::Ping returned HTTP $STATUS — app may be down."
+            exit 1
+          fi
+          echo "✓ App is awake."

@@ -16,7 +16,7 @@ This file only handles the UI layer.
 Usage
 -----
     # From the repo root:
-    streamlit run app.py
+    streamlit run web/app.py
 
 Dependencies (add to environment.yml or pip install):
     streamlit >= 1.35
@@ -36,7 +36,7 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 # Path setup — allow imports from src/ without installing the package
 # ---------------------------------------------------------------------------
-SRC_DIR = Path(__file__).parent / "src"
+SRC_DIR = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
 
 from motif_id_lib.input import Sequence, Enzymes

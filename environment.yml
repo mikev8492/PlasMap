@@ -1,4 +1,4 @@
-name: plasmap_demo
+name: plasmap
 channels:
   - conda-forge
 dependencies:
