@@ -18,7 +18,7 @@ name: Streamlit Keep-Alive
 on:
   schedule:
     # Runs every hour  (cron: min hour dom month dow)
-    - cron: "0 */1 * * *"
+    - cron: "0 */3 * * *"
   workflow_dispatch:   # allow manual trigger from the Actions tab
 
 jobs:
