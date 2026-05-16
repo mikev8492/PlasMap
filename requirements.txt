@@ -1,7 +1,0 @@
-biopython
-pandas
-streamlit
-matplotlib
-numpy
-termcolor
-inquirer
